@@ -65,7 +65,7 @@ class SQLFuzzer:
 
         # Parse URL to extract parameters
         url_info = self.url_parser.parse(self.url)
-        print(f"[DEBUG] URL Info: {url_info}")
+        # print(f"[DEBUG] URL Info: {url_info}")
         if not url_info['parameters']:
             print(
                 "[!] No parameters found in the URL. SQL injection testing requires parameters.")
@@ -76,7 +76,7 @@ class SQLFuzzer:
         # Generate payloads
         payloads = self.payload_generator.generate_mysql_payloads()
         print(f"[*] Loaded {len(payloads)} SQL injection payloads")
-        print(f"[DEBUG] Payloads: {payloads}")
+        #print(f"[DEBUG] Payloads: {payloads}")
 
         # Test each parameter with each payload
         total_tests = len(url_info['parameters']) * len(payloads)
@@ -93,7 +93,7 @@ class SQLFuzzer:
                 # Create test URL with injected payload
                 test_url = self.url_parser.inject_payload(
                     self.url, param_name, payload)
-                print(f"[DEBUG] Test URL: {test_url}")
+                # print(f"[DEBUG] Test URL: {test_url}")
 
                 # Send request
                 response = self.request_handler.send_request(test_url)
