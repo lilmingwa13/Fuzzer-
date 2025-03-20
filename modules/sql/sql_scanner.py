@@ -242,53 +242,68 @@ class SQLScanner:
             # Test for each injection type
             vulnerabilities = []
 
+            # Cờ để kiểm tra xem đã tìm thấy lỗ hổng chưa
+            vulnerability_found = False
+
             # Error-based injection
-            if 'error' not in self.injection_types:
+            if not vulnerability_found and 'error' not in self.injection_types:
                 self.output.info(
                     "Skipping error-based testing (not in selected types)")
-            else:
+            elif not vulnerability_found:
                 self.output.info("Testing for error-based MySQL injection")
                 error_vuln = self._test_error_based(
                     url, param_name, params, method, baseline_response)
                 if error_vuln:
                     vulnerabilities.append(error_vuln)
                     total_vulnerabilities += 1
+                    vulnerability_found = True
+                    self.output.success(
+                        f"Error-based SQL injection found! Stopping further tests for this parameter.")
 
             # Boolean-based injection
-            if 'boolean' not in self.injection_types:
+            if not vulnerability_found and 'boolean' not in self.injection_types:
                 self.output.info(
                     "Skipping boolean-based testing (not in selected types)")
-            else:
+            elif not vulnerability_found:
                 self.output.info("Testing for boolean-based MySQL injection")
                 boolean_vuln = self._test_boolean_based(
                     url, param_name, params, method, baseline_response)
                 if boolean_vuln:
                     vulnerabilities.append(boolean_vuln)
                     total_vulnerabilities += 1
+                    vulnerability_found = True
+                    self.output.success(
+                        f"Boolean-based SQL injection found! Stopping further tests for this parameter.")
 
             # Time-based injection
-            if 'time' not in self.injection_types:
+            if not vulnerability_found and 'time' not in self.injection_types:
                 self.output.info(
                     "Skipping time-based testing (not in selected types)")
-            else:
+            elif not vulnerability_found:
                 self.output.info("Testing for time-based MySQL injection")
                 time_vuln = self._test_time_based(
                     url, param_name, params, method, baseline_response)
                 if time_vuln:
                     vulnerabilities.append(time_vuln)
                     total_vulnerabilities += 1
+                    vulnerability_found = True
+                    self.output.success(
+                        f"Time-based SQL injection found! Stopping further tests for this parameter.")
 
             # Union-based injection
-            if 'union' not in self.injection_types:
+            if not vulnerability_found and 'union' not in self.injection_types:
                 self.output.info(
                     "Skipping union-based testing (not in selected types)")
-            else:
+            elif not vulnerability_found:
                 self.output.info("Testing for union-based MySQL injection")
                 union_vuln = self._test_union_based(
                     url, param_name, params, method, baseline_response)
                 if union_vuln:
                     vulnerabilities.append(union_vuln)
                     total_vulnerabilities += 1
+                    vulnerability_found = True
+                    self.output.success(
+                        f"Union-based SQL injection found! Stopping further tests for this parameter.")
 
             # Check if vulnerabilities were found for this parameter
             if vulnerabilities:
