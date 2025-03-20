@@ -124,7 +124,8 @@ class XSSScanner:
                 post_params = {}
                 if self.method == "POST" and self.data:
                     try:
-                        post_params = self.post_data_handler.parse(self.data)
+                        post_params = self.post_data_handler.parse_post_data(self.data)[
+                            'parameters']
                     except Exception as e:
                         output.print_error(
                             f"Error parsing POST data: {str(e)}")
@@ -207,7 +208,8 @@ class XSSScanner:
             in_url = True
         elif self.method == "POST" and self.data:
             # Check if parameter is in POST data
-            post_params = self.post_data_handler.parse(self.data)
+            post_params = self.post_data_handler.parse_post_data(self.data)[
+                'parameters']
             if param_name in post_params:
                 original_value = post_params[param_name]
                 in_url = False
