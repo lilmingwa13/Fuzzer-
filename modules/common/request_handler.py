@@ -11,11 +11,17 @@ import urllib3
 
 
 class RequestHandler:
-    def __init__(self, timeout=10, user_agent=None, cookies=None, proxy=None, delay=0, headers=None, verify_ssl=False):
+    def __init__(self, timeout=100, user_agent=None, cookies=None, proxy=None, delay=0, headers=None, verify_ssl=False):
         self.timeout = timeout
         self.delay = delay
         self.user_agent = user_agent or "WebSecurityFuzzer/2.0"
-        self.cookies = self._parse_cookies(cookies) if cookies else {}
+
+        # Kiểm tra nếu cookies đã là dict thì sử dụng trực tiếp
+        if isinstance(cookies, dict):
+            self.cookies = cookies
+        else:
+            self.cookies = self._parse_cookies(cookies) if cookies else {}
+
         self.proxies = self._setup_proxy(proxy) if proxy else {}
         self.headers = headers or {}
         self.verify_ssl = verify_ssl

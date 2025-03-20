@@ -281,7 +281,7 @@ class ResponseAnalyzer:
         """
         # If response time is at least 80% of the sleep time and significantly
         # longer than baseline, likely time-based injection
-        if response_time > (sleep_time * 0.8) and response_time > (baseline_time * 2):
+        if response_time > (sleep_time * 2) and response_time > (baseline_time * 2):
             if self.verbose:
                 print(
                     f"[+] Time-based difference detected: {baseline_time:.2f}s vs {response_time:.2f}s")
