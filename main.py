@@ -74,8 +74,8 @@ def parse_arguments():
 
     # XSS Scanner options
     xss_group = parser.add_argument_group("XSS Options")
-    xss_group.add_argument("--xss-types", default="reflected,dom,stored",
-                           help="Types of XSS to test (default: reflected,dom,stored)")
+    xss_group.add_argument("--xss-types", default="reflected",
+                           help="Types of XSS to test (default: reflected)")
     xss_group.add_argument(
         "--callback-url", help="Callback URL for blind XSS testing")
 
@@ -259,7 +259,7 @@ def run_xss_scanner(urls, args, output):
         delay=args.delay,
         user_agent=args.user_agent,
         proxy=args.proxy,
-        xss_types=xss_types,
+        injection_types=xss_types,
         callback_url=args.callback_url,
         verbose=args.verbose,
         no_color=args.no_color

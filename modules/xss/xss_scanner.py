@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-XSS (Cross-Site Scripting) Scanner module
+XSS (Cross-Site Scripting) Scanner module - Reflected XSS only
 """
 
 import time
@@ -17,21 +17,26 @@ from .payload_generator import XSSPayloadGenerator
 
 
 class XSSScanner:
-    def __init__(self, urls=None, url=None, timeout=10, delay=0,
+    def __init__(self, urls=None, url=None, method="GET", data=None,
+                 headers=None, timeout=10, delay=0,
                  user_agent=None, cookies=None, proxy=None,
-                 callback_url=None, verbose=False, no_color=False):
+                 callback_url=None, injection_types=None, verbose=False, no_color=False):
         """
         Initialize the XSS Scanner
 
         Args:
             urls (list): List of URLs to scan
             url (str): Single URL to scan (alternative to urls)
+            method (str): HTTP method (GET or POST)
+            data (str): POST data
+            headers (dict): Custom HTTP headers
             timeout (int): Request timeout in seconds
             delay (float): Delay between requests in seconds
             user_agent (str): Custom User-Agent
             cookies (str): Cookies to include with requests
             proxy (str): Proxy to use
             callback_url (str): Callback URL for blind XSS testing
+            injection_types (list): List of XSS types to test (reflected only)
             verbose (bool): Verbose output
             no_color (bool): Disable colored output
         """
@@ -39,10 +44,17 @@ class XSSScanner:
         if url and url not in self.urls:
             self.urls.append(url)
 
+        self.method = method.upper()
+        self.data = data
+        self.headers = headers or {}
         self.timeout = timeout
         self.delay = delay
         self.callback_url = callback_url
         self.verbose = verbose
+        self.no_color = no_color
+
+        # Only support reflected XSS now
+        self.injection_types = ['reflected']
 
         # Initialize common modules
         self.url_parser = URLParser()
@@ -50,9 +62,11 @@ class XSSScanner:
             timeout=timeout,
             user_agent=user_agent,
             cookies=cookies,
+            headers=self.headers,
             proxy=proxy,
             delay=delay
         )
+
         self.post_data_handler = PostDataHandler()
         self.payload_generator = XSSPayloadGenerator()
 
@@ -69,204 +83,183 @@ class XSSScanner:
 
     def scan(self):
         """
-        Start XSS scanning on the specified URLs
+        Scan URLs for XSS vulnerabilities
 
         Returns:
-            dict: Scanning results
+            dict: Scan results
         """
         if not self.urls:
-            self.output.print_error("No URLs provided for XSS scanning")
-            return False
+            return {'vulnerabilities': [], 'scan_info': {'urls_scanned': 0}}
 
-        self.output.banner("XSS Scanner", "1.0.0")
-        self.output.print_info(f"Target URLs: {len(self.urls)}")
-
-        start_time = time.time()
-        total_params_tested = 0
-
-        for url in self.urls:
-            self.output.print_info(f"Scanning URL: {url}")
-
-            if not self._is_valid_url(url):
-                self.output.print_error(f"Invalid URL: {url}")
-                self.failed_urls.append(url)
-                continue
-
-            # Parse URL and extract parameters
-            url_info = self.url_parser.parse(url)
-
-            if not url_info['parameters']:
-                self.output.print_warning(f"No parameters found in URL: {url}")
-                continue
-
-            self.output.print_info(
-                f"Found {len(url_info['parameters'])} parameter(s) to test")
-
-            # Get baseline response
-            baseline_response = self.request_handler.send_request(url)
-            if not baseline_response:
-                self.output.print_error(
-                    f"Failed to get baseline response: {url}")
-                self.failed_urls.append(url)
-                continue
-
-            # Test each parameter
-            for param_name, param_value in url_info['parameters'].items():
-                self.output.print_info(f"Testing parameter: {param_name}")
-                total_params_tested += 1
-
-                # Get reflected XSS payloads
-                payloads = self.payload_generator.get_reflected_payloads()
-
-                # Scan for reflected XSS
-                self._scan_reflected_xss(
-                    url, param_name, payloads, baseline_response)
-
-            # Check for DOM-based XSS (this is more complex and often requires browser automation)
-            # For the scope of this example, we'll just use a simplified approach
-            self._scan_dom_xss(url, baseline_response)
-
-        # Calculate statistics
-        elapsed_time = time.time() - start_time
-
-        self.output.print_success(
-            f"XSS scanning completed in {elapsed_time:.2f} seconds")
-        self.output.print_success(
-            f"Tested {len(self.urls)} URLs and {total_params_tested} parameters")
-
-        if self.vulnerabilities:
-            self.output.print_success(
-                f"Found {len(self.vulnerabilities)} XSS vulnerabilities")
-            for i, vuln in enumerate(self.vulnerabilities, 1):
-                self.output.print_success(
-                    f"{i}. {vuln['url']} - {vuln['type']}")
-                self.output.print_detail("Parameter", vuln['parameter'])
-                self.output.print_detail("Payload", vuln['payload'])
-                self.output.print_detail("Evidence", vuln['evidence'])
-        else:
-            self.output.print_info("No XSS vulnerabilities found")
-
-        # Prepare result summary
-        self.scan_results = {
-            'start_time': start_time,
-            'end_time': time.time(),
-            'duration_seconds': elapsed_time,
-            'urls_scanned': len(self.urls),
-            'parameters_tested': total_params_tested,
-            'vulnerabilities_found': len(self.vulnerabilities),
-            'failed_urls': self.failed_urls,
-            'vulnerabilities': self.vulnerabilities
+        results = {
+            'scan_info': {
+                'start_time': time.time(),
+                'urls_scanned': 0,
+                'params_tested': 0,
+                'payloads_tested': 0
+            },
+            'vulnerabilities': []
         }
 
-        return self.scan_results
+        # Get payloads
+        reflected_payloads = self.payload_generator.get_reflected_payloads()
+
+        # Generate unique identifier for this scan
+        scan_id = str(uuid.uuid4())[:8]
+
+        output = Output(no_color=self.no_color)
+
+        # For each URL
+        for url in self.urls:
+            try:
+                output.print_info(f"Scanning {url} for XSS vulnerabilities")
+
+                # Parse URL to extract parameters
+                parsed_url = self.url_parser.parse(url)
+                parameters = parsed_url['parameters']
+
+                # For POST requests, parse the data
+                post_params = {}
+                if self.method == "POST" and self.data:
+                    try:
+                        post_params = self.post_data_handler.parse(self.data)
+                    except Exception as e:
+                        output.print_error(
+                            f"Error parsing POST data: {str(e)}")
+
+                # Combine parameters from URL and POST data
+                all_params = {**parameters, **post_params}
+
+                if not all_params:
+                    output.print_warning(f"No parameters found in {url}")
+                    continue
+
+                output.print_info(
+                    f"Testing {len(all_params)} parameter(s) for XSS")
+
+                # Get baseline response
+                if self.method == "GET":
+                    baseline_response = self.request_handler.send_request(url)
+                else:  # POST
+                    baseline_response = self.request_handler.send_request(
+                        url, method="POST", data=self.data)
+
+                if not baseline_response:
+                    output.print_error(
+                        f"Failed to get baseline response for {url}")
+                    continue
+
+                # Track parameters tested
+                results['scan_info']['params_tested'] += len(all_params)
+
+                # For each parameter, test for XSS
+                for param_name, param_value in all_params.items():
+                    output.print_info(f"Testing parameter: {param_name}")
+
+                    # Test for reflected XSS
+                    self._scan_reflected_xss(
+                        url, param_name, reflected_payloads, baseline_response)
+
+                results['scan_info']['urls_scanned'] += 1
+
+            except Exception as e:
+                output.print_error(f"Error scanning {url}: {str(e)}")
+
+            # Add delay between URLs if specified
+            if self.delay > 0:
+                time.sleep(self.delay)
+
+        # Calculate scan duration
+        results['scan_info']['end_time'] = time.time()
+        results['scan_info']['duration'] = results['scan_info']['end_time'] - \
+            results['scan_info']['start_time']
+        results['vulnerabilities'] = self.get_vulnerabilities()
+
+        output.print_success(
+            f"XSS scan completed in {results['scan_info']['duration']:.2f} seconds")
+        output.print_info(
+            f"Found {len(results['vulnerabilities'])} XSS vulnerabilities")
+
+        return results
 
     def _scan_reflected_xss(self, url, param_name, payloads, baseline_response):
         """
-        Scan for reflected XSS in a specific parameter
+        Scan for reflected XSS vulnerabilities
 
         Args:
             url (str): Target URL
             param_name (str): Parameter name to test
             payloads (list): XSS payloads to test
-            baseline_response (Response): Baseline response
+            baseline_response (requests.Response): Baseline response
         """
-        baseline_content = baseline_response.text
+        output = Output(no_color=self.no_color)
+        output.print_info(
+            f"Testing parameter '{param_name}' for reflected XSS")
 
-        for payload in payloads:
-            if self.verbose:
-                self.output.print_info(f"Trying payload: {payload}")
+        # Store original parameter value
+        original_value = ""
+        parsed_url = self.url_parser.parse(url)
 
-            # Create test URL with injected payload
-            test_url = self.url_parser.inject_payload(url, param_name, payload)
-
-            # Send request
-            response = self.request_handler.send_request(test_url)
-            if not response:
-                continue
-
-            # Check for payload reflection
-            is_vulnerable, evidence = self._detect_reflected_xss(
-                response.text, payload)
-
-            if is_vulnerable:
-                vuln = {
-                    'url': url,
-                    'parameter': param_name,
-                    'payload': payload,
-                    'evidence': evidence,
-                    'type': 'Reflected XSS'
-                }
-
-                self.vulnerabilities.append(vuln)
-
-                self.output.print_success(
-                    f"Reflected XSS found in parameter '{param_name}'")
-                self.output.print_detail("URL", url)
-                self.output.print_detail("Payload", payload)
-                self.output.print_detail("Evidence", evidence)
-
-                # Stop testing this parameter after finding a vulnerability
-                # Uncomment if you want to find only the first vulnerability per parameter
-                # break
-
-    def _scan_dom_xss(self, url, baseline_response):
-        """
-        Scan for DOM-based XSS
-
-        Args:
-            url (str): Target URL
-            baseline_response (Response): Baseline response
-        """
-        # Get DOM-based payloads
-        payloads = self.payload_generator.get_dom_based_payloads()
-
-        # Check if page has potential DOM-based XSS sinks
-        dom_sinks = self._find_dom_sinks(baseline_response.text)
-
-        if not dom_sinks:
-            if self.verbose:
-                self.output.print_info("No potential DOM XSS sinks found")
+        if param_name in parsed_url['parameters']:
+            original_value = parsed_url['parameters'][param_name]
+            in_url = True
+        elif self.method == "POST" and self.data:
+            # Check if parameter is in POST data
+            post_params = self.post_data_handler.parse(self.data)
+            if param_name in post_params:
+                original_value = post_params[param_name]
+                in_url = False
+            else:
+                output.print_warning(
+                    f"Parameter '{param_name}' not found in request")
+                return
+        else:
+            output.print_warning(f"Parameter '{param_name}' not found in URL")
             return
 
-        self.output.print_info(
-            f"Found {len(dom_sinks)} potential DOM XSS sinks")
+        # Test each payload
+        for payload in payloads:
+            try:
+                # Generate test URL or POST data with payload
+                if in_url:
+                    test_url = self.url_parser.inject_payload(
+                        url, param_name, payload)
+                    response = self.request_handler.send_request(test_url)
+                else:
+                    # Inject payload into POST data
+                    modified_data = self.data.replace(
+                        f"{param_name}={original_value}", f"{param_name}={payload}")
+                    response = self.request_handler.send_request(
+                        url, method="POST", data=modified_data)
 
-        # Simplistic DOM XSS testing - in a real-world scenario,
-        # you'd use browser automation to detect actual execution
-        for sink in dom_sinks:
-            self.output.print_info(f"Testing DOM sink: {sink}")
+                if not response:
+                    continue
 
-            # Test fragment/hash-based payloads
-            for payload in payloads:
-                if payload.startswith('#'):
-                    test_url = url + payload
+                # Check if payload is reflected in response
+                is_vulnerable, evidence = self._detect_reflected_xss(
+                    response.text, payload)
 
-                    if self.verbose:
-                        self.output.print_info(
-                            f"Testing DOM payload: {payload}")
+                if is_vulnerable:
+                    vuln = {
+                        'url': url,
+                        'parameter': param_name,
+                        'payload': payload,
+                        'evidence': evidence,
+                        'type': 'Reflected XSS'
+                    }
 
-                    # This would ideally be tested with a headless browser
-                    # For our simplified scanner, we'll just note it as a potential vulnerability
-                    if 'location.hash' in baseline_response.text:
-                        vuln = {
-                            'url': url,
-                            'parameter': 'DOM/fragment',
-                            'payload': payload,
-                            'evidence': f"Potential DOM XSS sink: {sink}",
-                            'type': 'Potential DOM XSS'
-                        }
+                    self.vulnerabilities.append(vuln)
 
-                        self.vulnerabilities.append(vuln)
+                    output.print_success(
+                        f"Reflected XSS found in {url}, parameter: {param_name}")
+                    output.print_success(f"Payload: {payload}")
+                    output.print_success(f"Evidence: {evidence}")
 
-                        self.output.print_success(
-                            f"Potential DOM XSS found in URL: {url}")
-                        self.output.print_detail("Sink", sink)
-                        self.output.print_detail("Payload", payload)
-                        self.output.print_detail(
-                            "Note", "DOM XSS requires browser verification")
+                    # Break after finding vulnerability for parameter
+                    break
 
-                        # Break after finding first vulnerability for this sink
-                        break
+            except Exception as e:
+                output.print_error(f"Error testing payload: {str(e)}")
 
     def _detect_reflected_xss(self, response_text, payload):
         """
@@ -327,60 +320,6 @@ class XSSScanner:
             return True, evidence
 
         return False, evidence
-
-    def _find_dom_sinks(self, html_content):
-        """
-        Find potential DOM XSS sinks in HTML content
-
-        Args:
-            html_content (str): HTML content
-
-        Returns:
-            list: Potential DOM XSS sinks
-        """
-        sinks = []
-
-        # Look for common DOM XSS sinks in JavaScript code
-        dom_sink_patterns = [
-            r'document\.write\s*\(',
-            r'\.innerHTML\s*=',
-            r'\.outerHTML\s*=',
-            r'\.insertAdjacentHTML\s*\(',
-            r'eval\s*\(',
-            r'setTimeout\s*\(',
-            r'setInterval\s*\(',
-            r'location\.hash',
-            r'location\.href',
-            r'location\.search',
-            r'document\.URL',
-            r'document\.documentURI',
-            r'document\.location',
-            r'\.createContextualFragment\s*\('
-        ]
-
-        # Extract all script tags
-        soup = BeautifulSoup(html_content, 'html.parser')
-        scripts = soup.find_all('script')
-
-        script_content = ""
-        for script in scripts:
-            if script.string:
-                script_content += script.string + "\n"
-
-        # Also check for inline event handlers
-        for tag in soup.find_all(True):
-            for attr in tag.attrs:
-                if attr.startswith('on'):
-                    # Found an event handler
-                    sinks.append(f"{tag.name} [{attr}]")
-
-        # Check for DOM sinks in script content
-        for pattern in dom_sink_patterns:
-            matches = re.findall(pattern, script_content)
-            for match in matches:
-                sinks.append(match)
-
-        return sinks
 
     def _is_valid_url(self, url):
         """Check if URL is valid"""

@@ -16,12 +16,13 @@ from ..common.utils import Output
 
 class WebCrawler:
     def __init__(self, url, max_depth=3, same_domain_only=True,
-                 exclude_patterns=None, timeout=10, delay=0, user_agent=None,
-                 cookies=None, proxy=None, verbose=False, no_color=False):
+                 exclude_patterns=None, include_forms=False, timeout=10, delay=0, user_agent=None,
+                 cookies=None, headers=None, proxy=None, verbose=False, no_color=False):
         self.start_url = url
         self.max_depth = max_depth
         self.same_domain_only = same_domain_only
         self.exclude_patterns = exclude_patterns or []
+        self.include_forms = include_forms
         self.visited_urls = set()
         self.url_queue = deque([(url, 0)])  # (url, depth)
         self.discovered_urls = {url: 0}  # url -> depth
@@ -34,6 +35,7 @@ class WebCrawler:
             timeout=timeout,
             user_agent=user_agent,
             cookies=cookies,
+            headers=headers,
             proxy=proxy,
             delay=delay
         )

