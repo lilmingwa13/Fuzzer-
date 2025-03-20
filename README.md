@@ -1,184 +1,259 @@
-# SQLFuzzer - SQL Injection Fuzzing Tool
+# Web Security Fuzzer
 
-SQLFuzzer là công cụ fuzzing SQL injection mạnh mẽ hỗ trợ cả phương thức GET và POST. Công cụ được thiết kế để phát hiện các lỗ hổng SQL injection trong các ứng dụng web.
+A versatile web application security testing tool supporting SQL injection, XSS (Cross-Site Scripting), and web crawling capabilities.
 
-## Tính năng
+## Features
 
-- Hỗ trợ cả phương thức GET và POST
-- Phát hiện nhiều loại SQL injection:
-  - Error-based injection
-  - Boolean-based injection
-  - Time-based injection
-- Hỗ trợ nhiều định dạng dữ liệu POST:
-  - application/x-www-form-urlencoded
-  - application/json
-  - multipart/form-data (hỗ trợ cơ bản)
-- Tùy chỉnh User-Agent, cookies, headers
-- Hỗ trợ delay giữa các request
-- Tùy chọn lưu báo cáo dưới dạng JSON
-- Hỗ trợ proxy
+- **Web Crawler**: Discover URLs on a target website with configurable depth
+- **SQL Injection Scanner**: Test for various SQL injection vulnerabilities
+  - Error-based SQL injection
+  - Boolean-based blind SQL injection
+  - Time-based blind SQL injection
+  - UNION-based SQL injection
+  - Authentication bypass
+- **Enhanced MySQL Detection**: Specialized payloads and detection patterns for MySQL
+  - Custom MySQL error patterns
+  - Advanced MySQL injection techniques (EXTRACTVALUE, UPDATEXML)
+  - MySQL UNION-based data extraction
+- **XSS Scanner**: Test for Cross-Site Scripting vulnerabilities
+  - Reflected XSS
+  - DOM-based XSS
+  - Stored XSS
+- **Flexible**: Support for both GET and POST requests
+- **Customizable**: Configure headers, cookies, User-Agent, proxies and more
+- **Report Generation**: Save scan results in JSON format
 
-## Cài đặt
+## Installation
 
-```bash
-# Clone repository
-git clone https://github.com/your-username/sqlfuzzer.git
-cd sqlfuzzer
+1. Clone the repository:
 
-# Cài đặt dependencies
+```
+git clone https://github.com/yourusername/web-security-fuzzer.git
+cd web-security-fuzzer
+```
+
+2. Install the required dependencies:
+
+```
 pip install -r requirements.txt
 ```
 
-## Cách sử dụng
+## Usage
 
-### Cấu trúc câu lệnh cơ bản
-
-```bash
-python sqlfuzzer.py -u <URL> [OPTIONS]
-```
-
-### Kiểm tra SQL injection với phương thức GET
-
-```bash
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -v
-```
-
-### Kiểm tra SQL injection với phương thức POST
-
-```bash
-# POST với form data
-python sqlfuzzer.py -u "http://example.com/login.php" -m POST -d "username=admin&password=test"
-
-# POST với JSON data
-python sqlfuzzer.py -u "http://example.com/api/user" -m POST -d '{"username":"admin","password":"test"}' --content-type "application/json"
-
-# POST với dữ liệu từ file
-python sqlfuzzer.py -u "http://example.com/api/user" -m POST --data-file post_data.txt
-```
-
-### Tùy chọn đầu ra
-
-```bash
-# Chế độ verbose (chi tiết)
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -v
-
-# Lưu kết quả vào file
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -o report.json
-
-# Không sử dụng màu sắc trong output
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" --no-color
-```
-
-### Tùy chọn request
-
-```bash
-# Thiết lập User-Agent
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -a "Mozilla/5.0"
-
-# Thiết lập cookie
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -c "session=abc123"
-
-# Thiết lập timeout
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -t 15
-
-# Thêm delay giữa các request
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" --delay 1.5
-
-# Sử dụng proxy
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -p "http://127.0.0.1:8080"
-
-# Thêm custom headers
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" -H "X-Forwarded-For: 127.0.0.1,Accept: application/json"
-```
-
-### Tùy chọn fuzzing
-
-```bash
-# Dừng sau khi tìm thấy lỗ hổng đầu tiên
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" --stop-on-first
-
-# Giới hạn số lượng tests
-python sqlfuzzer.py -u "http://example.com/page.php?id=1" --max-tests 100
-```
-
-## Tham số đầy đủ
+### Basic Usage
 
 ```
-Tham số Target:
-  -u URL, --url URL     Target URL (e.g., http://example.com/page.php?id=1)
-  -m METHOD, --method METHOD
-                        HTTP method (GET or POST, default: GET)
-  -d DATA, --data DATA  POST data (e.g., 'username=admin&password=test')
-  --data-file DATA_FILE
-                        File containing POST data
-  -H HEADERS, --headers HEADERS
-                        Custom HTTP headers (comma-separated, e.g. 'X-Forwarded-For: 127.0.0.1,Accept: application/json')
-  -c COOKIES, --cookies COOKIES
-                        Cookies to include with HTTP requests
-  --content-type CONTENT_TYPE
-                        Content-Type header for POST requests (e.g., application/json, application/x-www-form-urlencoded)
-
-Tham số Request:
-  -a USER_AGENT, --user-agent USER_AGENT
-                        Custom User-Agent (default: SQLFuzzer/2.0)
-  -t TIMEOUT, --timeout TIMEOUT
-                        Request timeout in seconds (default: 10)
-  --delay DELAY         Delay between requests in seconds (default: 0)
-  -p PROXY, --proxy PROXY
-                        Proxy to use (e.g., http://127.0.0.1:8080)
-
-Tham số Output:
-  -v, --verbose         Verbose output
-  --no-color            Disable colored output
-  -o OUTPUT, --output OUTPUT
-                        Save results to output file (JSON format)
-
-Tham số Fuzzing:
-  --max-tests MAX_TESTS
-                        Maximum number of tests to run (0 for unlimited)
-  --stop-on-first       Stop testing after finding first vulnerability
+python main.py -u "http://example.com/page.php?id=1" --sql
 ```
 
-## Ví dụ output
+### Module Selection
+
+- Use `--sql` for SQL injection testing
+- Use `--xss` for XSS testing
+- Use `--crawl` for web crawling
+- Use `--all` to run all modules
+
+### Examples
+
+#### Basic SQL Injection Scan
 
 ```
- ____   ___  _     _____
-/ ___| / _ \| |   |  ___|   _ _______  ___ _ __
-\___ \| | | | |   | |_ | | | |_  / _ \/ _ \ '__|
- ___) | |_| | |___|  _|| |_| |/ /  __/  __/ |
-|____/ \__\_\_____|_|   \__,_/___\___|\___|_|
-
-        SQL Injection Fuzzing Tool
-
-Version: 2.0.0
-Started at: 2023-08-29 15:30:21
-
-[*] Starting SQL injection fuzzing on: http://example.com/page.php?id=1
-[*] Method: GET
-[*] Found 1 parameter(s) to test with GET
-[*] Loaded 49 SQL injection payloads
-
-[*] Testing parameter: id
-
-[*] Testing error-based injections for parameter 'id'
-[*] Trying payload: '
-
-[+] Error-based SQL injection found in parameter 'id'
-    Payload: '
-    URL: http://example.com/page.php?id='
-    Method: GET
-    Details: MySQL error detected: You have an error in your SQL syntax
-
-[+] Found 1 potential SQL injection vulnerabilities
-[+] - error-based: 1
-[+] Stopped fuzzing after finding error-based vulnerability
-[+] Report saved to: report.json
+python main.py -u "http://example.com/page.php?id=1" --sql
 ```
 
-## Giấy phép
+#### MySQL-Specific SQL Injection Testing
 
-Công cụ này được phát hành dưới giấy phép MIT.
+```
+python main.py -u "http://example.com/page.php?id=1" --sql --sql-types=error,boolean,time,union
+```
 
-## Tuyên bố từ chối trách nhiệm
+#### Crawl a Website and Test Discovered URLs for XSS
 
-Công cụ này chỉ được sử dụng cho mục đích kiểm tra bảo mật hợp pháp. Người dùng chịu hoàn toàn trách nhiệm về cách sử dụng công cụ này. Tác giả không chịu trách nhiệm về bất kỳ thiệt hại nào gây ra bởi việc sử dụng sai mục đích của công cụ.
+```
+python main.py -u "http://example.com/" --crawl --xss --depth 3
+```
+
+#### Test a POST Request for SQL Injection
+
+```
+python main.py -u "http://example.com/login.php" --sql -m POST -d "username=admin&password=pass"
+```
+
+#### Run All Scans with Detailed Output
+
+```
+python main.py -u "http://example.com/" --all -v -o results.json
+```
+
+#### Scan Multiple URLs from a File
+
+```
+python main.py -f urls.txt --sql --xss -v
+```
+
+### Crawler Options
+
+```
+--depth N              Maximum crawl depth (default: 2)
+--same-domain          Only crawl URLs within the same domain
+--exclude PATTERNS     Exclude URLs matching these patterns (comma-separated)
+--include-forms        Include forms in crawling results
+```
+
+### SQL Injection Options
+
+```
+--sql-types TYPES      Types of SQL injection to test (default: error,boolean,time,union,auth)
+```
+
+### MySQL-Specific Testing
+
+The tool now includes enhanced capabilities for detecting MySQL-specific SQL injection vulnerabilities:
+
+#### Error-based MySQL Injection
+
+The scanner uses specialized MySQL payloads to detect error-based vulnerabilities:
+
+- EXTRACTVALUE and UPDATEXML functions for error-based data extraction
+- Custom regex patterns to detect specific MySQL errors
+- Advanced data extraction from error messages
+
+Example:
+
+```
+python main.py -u "http://example.com/page.php?id=1" --sql --sql-types=error
+```
+
+#### Union-based MySQL Injection
+
+Enhanced UNION-based testing with MySQL-specific queries:
+
+- Information_schema database exploration
+- Column enumeration techniques
+- Data extraction using GROUP_CONCAT and other MySQL functions
+
+Example:
+
+```
+python main.py -u "http://example.com/page.php?id=1" --sql --sql-types=union
+```
+
+#### Time-based MySQL Injection
+
+Specialized time-based testing using MySQL's timing functions:
+
+- SLEEP() function testing
+- BENCHMARK() function testing
+- Advanced timing analysis algorithms
+
+Example:
+
+```
+python main.py -u "http://example.com/page.php?id=1" --sql --sql-types=time
+```
+
+### XSS Options
+
+```
+--xss-types TYPES      Types of XSS to test (default: reflected,dom,stored)
+--callback-url URL     Callback URL for blind XSS testing
+```
+
+### Request Options
+
+```
+-m, --method METHOD    HTTP method (GET or POST, default: GET)
+-d, --data DATA        POST data (e.g. 'param1=value1&param2=value2')
+-H, --headers HEADERS  Custom HTTP headers (e.g. 'Header1:value1,Header2:value2')
+-c, --cookies COOKIES  HTTP cookies (e.g. 'cookie1=value1;cookie2=value2')
+-A, --user-agent AGENT Custom User-Agent
+-p, --proxy PROXY      Proxy URL (e.g. 'http://127.0.0.1:8080')
+-t, --timeout SECONDS  Request timeout in seconds (default: 10)
+--delay SECONDS        Delay between requests in seconds (default: 0)
+```
+
+### Output Options
+
+```
+-o, --output FILE      Save results to file (JSON format)
+-v, --verbose          Verbose output
+--no-color             Disable colored output
+```
+
+## Full Command Reference
+
+```
+python main.py [-h] (-u URL | -f FILE) [--sql] [--xss] [--crawl] [--all]
+               [--depth DEPTH] [--same-domain] [--exclude EXCLUDE]
+               [--include-forms] [--sql-types SQL_TYPES]
+               [--xss-types XSS_TYPES] [--callback-url CALLBACK_URL]
+               [-m {GET,POST}] [-d DATA] [-H HEADERS] [-c COOKIES]
+               [-A USER_AGENT] [-p PROXY] [-t TIMEOUT] [--delay DELAY]
+               [-o OUTPUT] [-v] [--no-color]
+```
+
+## Examples
+
+### Crawl a Website and Test for SQL Injection
+
+```
+python main.py -u "http://testphp.vulnweb.com/" --crawl --sql --depth 2
+```
+
+### Test a Login Form for SQL Injection and XSS
+
+```
+python main.py -u "http://testphp.vulnweb.com/login.php" --sql --xss -m POST -d "uname=test&pass=test"
+```
+
+### Scan with Custom Headers and Cookies
+
+```
+python main.py -u "http://example.com/page.php?id=1" --all -H "Referer:http://example.com/,X-Forwarded-For:127.0.0.1" -c "session=abc123;logged_in=true"
+```
+
+### Test MySQL-Specific SQL Injection
+
+```
+python main.py -u "http://example.com/page.php?id=1" --sql --sql-types=error,union -v
+```
+
+## Project Structure
+
+```
+web-security-fuzzer/
+├── main.py                # Main entry point
+├── requirements.txt       # Python dependencies
+├── modules/               # Modules directory
+│   ├── common/            # Common utilities
+│   │   ├── __init__.py
+│   │   ├── request_handler.py
+│   │   ├── url_parser.py
+│   │   ├── post_data_handler.py
+│   │   └── utils.py
+│   ├── sql/               # SQL injection modules
+│   │   ├── __init__.py
+│   │   ├── sql_scanner.py
+│   │   ├── payload_generator.py
+│   │   ├── mysql_payloads.py # MySQL-specific payloads and patterns
+│   │   └── response_analyzer.py
+│   ├── xss/               # XSS modules
+│   │   ├── __init__.py
+│   │   ├── xss_scanner.py
+│   │   └── payload_generator.py
+│   └── crawler/           # Web crawler modules
+│       ├── __init__.py
+│       └── crawler.py
+```
+
+## Disclaimer
+
+This tool is for educational purposes and authorized security testing only. Do not use it against websites without explicit permission. Unauthorized scanning of websites may be illegal in your jurisdiction.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contribution
+
+Contributions are welcome! Please feel free to submit a Pull Request.

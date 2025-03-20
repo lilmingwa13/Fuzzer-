@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-POST Data Handler module for the SQL Injection Fuzzer
+POST Data Handler module for the Web Security Fuzzer
 """
 
 import json
@@ -104,12 +104,12 @@ class PostDataHandler:
 
     def inject_payload_to_post_data(self, post_data, param_name, payload, content_type=None):
         """
-        Inject a SQL payload into POST data based on the content type
+        Inject a payload into POST data based on the content type
 
         Args:
             post_data (str): Original POST data
             param_name (str): Parameter to inject payload into
-            payload (str): SQL injection payload
+            payload (str): The payload
             content_type (str, optional): Content-Type header. Defaults to None.
 
         Returns:
@@ -172,7 +172,7 @@ class PostDataHandler:
                 params[param_name] = payload
 
                 # Encode back to string
-                return urllib.parse.urlencode(params, safe="*()'-=")
+                return urllib.parse.urlencode(params, safe="*()'-=<>\"{}[];:,./?")
 
             # For other content types, simple string replacement if parameter exists
             else:
@@ -186,7 +186,7 @@ class PostDataHandler:
                             value_end = len(parts[1])
 
                         # Replace the value
-                        return parts[0] + param_name + '=' + urllib.parse.quote(payload, safe="*()'-=") + parts[1][value_end:]
+                        return parts[0] + param_name + '=' + urllib.parse.quote(payload, safe="*()'-=<>\"{}[];:,./?") + parts[1][value_end:]
 
                 return post_data
 

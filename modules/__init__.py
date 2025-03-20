@@ -1,16 +1,8 @@
-#!/usr/bin/env python3
 """
-SQL Injection Fuzzer modules
+Web Security Fuzzer - Main modules package
 """
 
-from .url_parser import URLParser
-from .payload_generator import PayloadGenerator
-from .request_handler import RequestHandler
-from .response_analyzer import ResponseAnalyzer
-
-__all__ = [
-    'URLParser',
-    'PayloadGenerator',
-    'RequestHandler',
-    'ResponseAnalyzer'
-]
+# Import modules for easy access
+from modules.sql.sql_scanner import SQLScanner
+from modules.xss.xss_scanner import XSSScanner
+from modules.crawler.crawler import WebCrawler
