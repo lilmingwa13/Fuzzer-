@@ -17,7 +17,7 @@ from ..common.utils import Output
 class WebCrawler:
     def __init__(self, url, max_depth=3, same_domain_only=True,
                  exclude_patterns=None, include_forms=False, timeout=10, delay=0, user_agent=None,
-                 cookies=None, headers=None, proxy=None, verbose=False, no_color=False):
+                 cookies=None, headers=None, proxy=None, verbose=False, no_color=False, verify_ssl=False):
         self.start_url = url
         self.max_depth = max_depth
         self.same_domain_only = same_domain_only
@@ -37,7 +37,8 @@ class WebCrawler:
             cookies=cookies,
             headers=headers,
             proxy=proxy,
-            delay=delay
+            delay=delay,
+            verify_ssl=verify_ssl
         )
 
         # Output formatting

@@ -7,16 +7,22 @@ import time
 import requests
 from requests.exceptions import RequestException
 from urllib.parse import urlparse
+import urllib3
 
 
 class RequestHandler:
-    def __init__(self, timeout=10, user_agent=None, cookies=None, proxy=None, delay=0, headers=None):
+    def __init__(self, timeout=10, user_agent=None, cookies=None, proxy=None, delay=0, headers=None, verify_ssl=False):
         self.timeout = timeout
         self.delay = delay
         self.user_agent = user_agent or "WebSecurityFuzzer/2.0"
         self.cookies = self._parse_cookies(cookies) if cookies else {}
         self.proxies = self._setup_proxy(proxy) if proxy else {}
         self.headers = headers or {}
+        self.verify_ssl = verify_ssl
+
+        # Tắt cảnh báo SSL khi không xác minh chứng chỉ
+        if not self.verify_ssl:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         # Configure requests session
         self.session = requests.Session()
@@ -104,7 +110,7 @@ class RequestHandler:
                     headers=request_headers,
                     proxies=self.proxies,
                     timeout=self.timeout,
-                    verify=False,  # Disable SSL verification
+                    verify=self.verify_ssl,  # Sử dụng cấu hình xác minh SSL
                     allow_redirects=allow_redirects
                 )
             elif method.upper() == "POST":
@@ -114,7 +120,7 @@ class RequestHandler:
                     headers=request_headers,
                     proxies=self.proxies,
                     timeout=self.timeout,
-                    verify=False,  # Disable SSL verification
+                    verify=self.verify_ssl,  # Sử dụng cấu hình xác minh SSL
                     allow_redirects=allow_redirects
                 )
             elif method.upper() == "HEAD":
@@ -123,7 +129,7 @@ class RequestHandler:
                     headers=request_headers,
                     proxies=self.proxies,
                     timeout=self.timeout,
-                    verify=False,  # Disable SSL verification
+                    verify=self.verify_ssl,  # Sử dụng cấu hình xác minh SSL
                     allow_redirects=allow_redirects
                 )
             else:
@@ -133,10 +139,10 @@ class RequestHandler:
             return response
 
         except RequestException as e:
-            print(f"[!] Request failed: {e}")
+            print(f"[!] Request failed for {url}: {e}")
             return None
         except Exception as e:
-            print(f"[!] Error sending request: {e}")
+            print(f"[!] Error sending request to {url}: {e}")
             return None
 
     def check_connection(self, url):

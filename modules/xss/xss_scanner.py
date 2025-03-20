@@ -20,7 +20,7 @@ class XSSScanner:
     def __init__(self, urls=None, url=None, method="GET", data=None,
                  headers=None, timeout=10, delay=0,
                  user_agent=None, cookies=None, proxy=None,
-                 callback_url=None, injection_types=None, verbose=False, no_color=False):
+                 callback_url=None, injection_types=None, verbose=False, no_color=False, verify_ssl=False):
         """
         Initialize the XSS Scanner
 
@@ -39,6 +39,7 @@ class XSSScanner:
             injection_types (list): List of XSS types to test (reflected only)
             verbose (bool): Verbose output
             no_color (bool): Disable colored output
+            verify_ssl (bool): Whether to verify SSL certificates
         """
         self.urls = urls or []
         if url and url not in self.urls:
@@ -64,7 +65,8 @@ class XSSScanner:
             cookies=cookies,
             headers=self.headers,
             proxy=proxy,
-            delay=delay
+            delay=delay,
+            verify_ssl=verify_ssl
         )
 
         self.post_data_handler = PostDataHandler()

@@ -71,6 +71,8 @@ def parse_arguments():
     sql_group = parser.add_argument_group("SQL Injection Options")
     sql_group.add_argument("--sql-types", default="error,boolean,time,union,auth",
                            help="Types of SQL injection to test (default: error,boolean,time,union,auth)")
+    sql_group.add_argument("--params",
+                           help="Specify parameters to test for SQL injection (comma-separated)")
 
     # XSS Scanner options
     xss_group = parser.add_argument_group("XSS Options")
@@ -96,6 +98,8 @@ def parse_arguments():
                                default=10, help="Request timeout in seconds (default: 10)")
     request_group.add_argument("--delay", type=float, default=0,
                                help="Delay between requests in seconds (default: 0)")
+    request_group.add_argument("--no-verify-ssl", action="store_true",
+                               help="Disable SSL certificate verification for HTTPS connections")
 
     # Output options
     output_group = parser.add_argument_group("Output Options")
@@ -179,7 +183,8 @@ def run_crawler(urls, args, output):
         headers=parse_headers(args.headers),
         proxy=args.proxy,
         verbose=args.verbose,
-        no_color=args.no_color
+        no_color=args.no_color,
+        verify_ssl=not args.no_verify_ssl
     )
 
     # Start crawling
@@ -208,6 +213,12 @@ def run_sql_scanner(urls, args, output):
     sql_types = [t.strip() for t in args.sql_types.split(',')
                  ] if args.sql_types else None
 
+    # Parse target parameters if specified
+    target_params = None
+    if args.params:
+        target_params = [p.strip() for p in args.params.split(',')]
+        output.info(f"Testing specific parameters: {', '.join(target_params)}")
+
     # Setup SQL scanner
     sql_scanner = SQLScanner(
         urls=urls,
@@ -221,7 +232,9 @@ def run_sql_scanner(urls, args, output):
         proxy=args.proxy,
         injection_types=sql_types,
         verbose=args.verbose,
-        no_color=args.no_color
+        no_color=args.no_color,
+        target_params=target_params,
+        verify_ssl=not args.no_verify_ssl
     )
 
     # Start scanning
@@ -262,7 +275,8 @@ def run_xss_scanner(urls, args, output):
         injection_types=xss_types,
         callback_url=args.callback_url,
         verbose=args.verbose,
-        no_color=args.no_color
+        no_color=args.no_color,
+        verify_ssl=not args.no_verify_ssl
     )
 
     # Start scanning

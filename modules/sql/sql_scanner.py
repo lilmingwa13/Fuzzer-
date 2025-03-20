@@ -34,7 +34,7 @@ class SQLScanner:
 
     def __init__(self, urls=None, url=None, method="GET", data=None, headers=None,
                  cookies=None, timeout=10, delay=0, user_agent=None, proxy=None,
-                 injection_types=None, verbose=False, no_color=False, dbms="mysql"):
+                 injection_types=None, verbose=False, no_color=False, dbms="mysql", target_params=None, verify_ssl=True):
         """
         Initialize the SQL Scanner
 
@@ -53,6 +53,8 @@ class SQLScanner:
             verbose (bool): Enable verbose output
             no_color (bool): Disable colored output
             dbms (str): Target database management system (default: mysql)
+            target_params (list): Specific parameters to test (if None, test all)
+            verify_ssl (bool): Whether to verify SSL certificates
         """
         self.urls = urls or []
         if url and url not in self.urls:
@@ -69,6 +71,8 @@ class SQLScanner:
         self.verbose = verbose
         self.no_color = no_color
         self.dbms = dbms.lower()  # Target database type, default to MySQL
+        self.target_params = target_params  # Specific parameters to test
+        self.verify_ssl = verify_ssl
 
         # Default injection types if none specified
         self.injection_types = injection_types or [
@@ -80,7 +84,8 @@ class SQLScanner:
             user_agent=self.user_agent,
             proxy=self.proxy,
             cookies=self.cookies,
-            headers=self.headers
+            headers=self.headers,
+            verify_ssl=self.verify_ssl
         )
 
         # Initialize payload generator
@@ -210,8 +215,24 @@ class SQLScanner:
             params (dict): Parameters to test
             method (str): HTTP method (GET or POST)
         """
-        self.output.info(
-            f"Testing {len(params)} parameters for MySQL injection")
+        # Filter parameters if target_params is specified
+        if self.target_params:
+            filtered_params = {}
+            for param in self.target_params:
+                if param in params:
+                    filtered_params[param] = params[param]
+
+            if not filtered_params:
+                self.output.warning(
+                    f"None of the specified parameters {', '.join(self.target_params)} found in request")
+                return
+
+            params = filtered_params
+            self.output.info(
+                f"Testing {len(params)} specified parameters for MySQL injection")
+        else:
+            self.output.info(
+                f"Testing {len(params)} parameters for MySQL injection")
 
         # Get baseline response for comparison
         baseline_response = self._get_baseline_response(url, method)
