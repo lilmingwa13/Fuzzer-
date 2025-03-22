@@ -10,6 +10,7 @@ import json
 import argparse
 import time
 from datetime import datetime
+import urllib.parse
 
 # Import modules
 from modules.sql.sql_scanner import SQLScanner
@@ -26,7 +27,7 @@ def banner():
     banner_text = f"""
     {Colors.BLUE}╔══════════════════════════════════════════════════════════╗
     ║                 {Colors.GREEN}Web Security Fuzzer v{VERSION}{Colors.BLUE}                 ║
-    ║  {Colors.YELLOW}SQL Injection | XSS | Web Crawler | Authentication Bypass{Colors.BLUE}  ║
+    ║               {Colors.YELLOW}SQL Injection | XSS | Web Crawler |   ║
     ╚══════════════════════════════════════════════════════════╝{Colors.RESET}
     """
     print(banner_text)
@@ -190,19 +191,21 @@ def run_crawler(urls, args, output):
     # Start crawling
     output.info(f"Crawling {urls[0]} with max depth {args.depth}...")
     start_time = time.time()
-    crawler.crawl()
+    results = crawler.crawl()
     end_time = time.time()
 
-    # Get results
-    crawled_urls = crawler.get_crawled_urls()
+    # Get parameterized URLs
+    parameterized_urls = crawler.get_parameterized_urls()
 
     # Print results
     output.success(
         f"Crawling completed in {end_time - start_time:.2f} seconds")
-    output.info(f"Found {len(crawled_urls)} URLs")
+    output.info(f"Found {len(results['urls'])} total URLs")
+    output.success(f"Found {len(parameterized_urls)} URLs with parameters")
+    output.info(f"Parameterized URLs saved to: {results['log_file']}")
 
-    # Return list of discovered URLs
-    return crawled_urls
+    # Return list of parameterized URLs
+    return parameterized_urls
 
 
 def run_sql_scanner(urls, args, output):
@@ -304,6 +307,115 @@ def save_results(results, output_file, output):
         output.error(f"Error saving results to file: {str(e)}")
 
 
+def save_vulnerabilities_log(vulnerabilities, log_file, scan_type, target_url, output):
+    """Save vulnerabilities to a log file
+
+    Args:
+        vulnerabilities (list): List of vulnerabilities
+        log_file (str): Path to log file
+        scan_type (str): Type of scan (SQL, XSS, etc.)
+        target_url (str): Target URL
+        output (Output): Output handler
+    """
+    try:
+        # Create directory if it doesn't exist
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        # Append to log file
+        mode = 'a' if os.path.exists(log_file) else 'w'
+        with open(log_file, mode) as f:
+            # If new file, write header
+            if mode == 'w':
+                f.write(
+                    "============================================================\n")
+                f.write(
+                    "||           Web Security Fuzzer - Vulnerability Log        ||\n")
+                f.write(
+                    "============================================================\n\n")
+                f.write(
+                    f"Scan started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Target URL: {target_url}\n\n")
+                f.write(
+                    "------------------------------------------------------------\n\n")
+
+            # Write scan section header
+            f.write(f"\n{'='*60}\n")
+            f.write(
+                f"|| {scan_type.upper()} VULNERABILITIES SCAN RESULTS ||\n")
+            f.write(f"{'='*60}\n")
+            f.write(
+                f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+            if not vulnerabilities:
+                f.write("No vulnerabilities found.\n")
+            else:
+                f.write(
+                    f"Found {len(vulnerabilities)} {scan_type.upper()} vulnerabilities:\n\n")
+                for i, vuln in enumerate(vulnerabilities, 1):
+                    f.write(f"{'-'*60}\n")
+                    f.write(f"Vulnerability #{i}:\n")
+                    f.write(f"{'-'*60}\n")
+
+                    if scan_type.lower() == 'sql':
+                        f.write(f"URL: {vuln['url']}\n")
+                        f.write(f"Parameter: {vuln['parameter']}\n")
+                        f.write(f"Type: {vuln['type']}\n")
+                        f.write(f"Payload: {vuln['payload']}\n")
+                        if 'evidence' in vuln:
+                            # Format evidence to make it more readable
+                            evidence = vuln['evidence']
+                            if len(evidence) > 200:
+                                evidence = evidence[:197] + "..."
+                            f.write(f"Evidence: {evidence}\n")
+                        f.write(f"Severity: {vuln.get('severity', 'High')}\n")
+                        f.write(f"DBMS: {vuln.get('dbms', 'Unknown')}\n")
+                    elif scan_type.lower() == 'xss':
+                        f.write(f"URL: {vuln['url']}\n")
+                        f.write(f"Parameter: {vuln['parameter']}\n")
+                        f.write(f"Type: {vuln['type']}\n")
+                        f.write(f"Payload: {vuln['payload']}\n")
+                        if 'evidence' in vuln:
+                            # Format evidence to make it more readable
+                            evidence = vuln['evidence']
+                            if len(evidence) > 200:
+                                evidence = evidence[:197] + "..."
+                            f.write(f"Evidence: {evidence}\n")
+                        f.write(f"Severity: {vuln.get('severity', 'High')}\n")
+
+                    # Add exploitation notes
+                    if scan_type.lower() == 'sql':
+                        f.write("\nExploitation Notes:\n")
+                        f.write(
+                            "- This parameter is vulnerable to SQL Injection attacks\n")
+                        f.write(
+                            "- An attacker could extract database information or manipulate queries\n")
+                        f.write(
+                            "- Consider using prepared statements or parameterized queries\n")
+                    elif scan_type.lower() == 'xss':
+                        f.write("\nExploitation Notes:\n")
+                        f.write(
+                            "- This parameter is vulnerable to Cross-Site Scripting (XSS) attacks\n")
+                        f.write(
+                            "- An attacker could execute malicious JavaScript in users' browsers\n")
+                        f.write(
+                            "- Consider implementing input validation and output encoding\n")
+
+                    f.write("\n")
+
+                # Add summary at the end
+                f.write(
+                    f"\nSummary: Found {len(vulnerabilities)} {scan_type} vulnerabilities in {target_url}\n")
+                f.write(f"{'='*60}\n\n")
+
+        output.success(f"{scan_type} vulnerabilities logged to: {log_file}")
+        return True
+    except Exception as e:
+        output.error(f"Error saving vulnerabilities to log file: {str(e)}")
+        return False
+
+
 def main():
     """Main function"""
     # Display banner
@@ -322,6 +434,13 @@ def main():
         sys.exit(1)
 
     output.info(f"Loaded {len(urls)} target URL(s)")
+
+    # Create vulnerability log filename based on first URL and timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    target_domain = urllib.parse.urlparse(urls[0]).netloc.replace(':', '_')
+    vuln_log_file = f"{target_domain}_{timestamp}_vulnerabilities.log"
+
+    output.info(f"Vulnerabilities will be logged to: {vuln_log_file}")
 
     # Initialize results
     results = {
@@ -354,6 +473,16 @@ def main():
         sql_results = run_sql_scanner(scan_urls, args, output)
         results['sql'] = sql_results
 
+        # Log SQL vulnerabilities if found
+        if 'vulnerabilities' in sql_results and sql_results['vulnerabilities']:
+            save_vulnerabilities_log(
+                sql_results['vulnerabilities'],
+                vuln_log_file,
+                'SQL',
+                urls[0],
+                output
+            )
+
     # Run XSS scanner if selected
     if args.xss or args.all:
         results['modules'].append('xss')
@@ -362,12 +491,23 @@ def main():
         xss_results = run_xss_scanner(scan_urls, args, output)
         results['xss'] = xss_results
 
+        # Log XSS vulnerabilities if found
+        if 'vulnerabilities' in xss_results and xss_results['vulnerabilities']:
+            save_vulnerabilities_log(
+                xss_results['vulnerabilities'],
+                vuln_log_file,
+                'XSS',
+                urls[0],
+                output
+            )
+
     # Save results if output file specified
     if args.output:
         save_results(results, args.output, output)
 
     # Print summary
     output.success("Scan completed")
+    output.info(f"All vulnerabilities logged to: {vuln_log_file}")
 
     # If no modules were selected
     if not results['modules']:
