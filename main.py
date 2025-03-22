@@ -93,8 +93,6 @@ def parse_arguments():
     request_group.add_argument(
         "-c", "--cookies", help="HTTP cookies (e.g. 'cookie1=value1;cookie2=value2')")
     request_group.add_argument("-A", "--user-agent", help="Custom User-Agent")
-    request_group.add_argument(
-        "-p", "--proxy", help="Proxy URL (e.g. 'http://127.0.0.1:8080')")
     request_group.add_argument("-t", "--timeout", type=int,
                                default=30, help="Request timeout in seconds (default: 30)")
     request_group.add_argument("--delay", type=float, default=0,
@@ -182,7 +180,6 @@ def run_crawler(urls, args, output):
         user_agent=args.user_agent,
         cookies=parse_cookies(args.cookies),
         headers=parse_headers(args.headers),
-        proxy=args.proxy,
         verbose=args.verbose,
         no_color=args.no_color,
         verify_ssl=not args.no_verify_ssl
@@ -232,7 +229,6 @@ def run_sql_scanner(urls, args, output):
         timeout=args.timeout,
         delay=args.delay,
         user_agent=args.user_agent,
-        proxy=args.proxy,
         injection_types=sql_types,
         verbose=args.verbose,
         no_color=args.no_color,
@@ -274,7 +270,6 @@ def run_xss_scanner(urls, args, output):
         timeout=args.timeout,
         delay=args.delay,
         user_agent=args.user_agent,
-        proxy=args.proxy,
         injection_types=xss_types,
         callback_url=args.callback_url,
         verbose=args.verbose,
