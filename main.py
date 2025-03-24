@@ -42,10 +42,7 @@ def parse_arguments():
 
     # Target options
     target_group = parser.add_argument_group("Target")
-    target_options = target_group.add_mutually_exclusive_group(required=True)
-    target_options.add_argument("-u", "--url", help="Target URL")
-    target_options.add_argument(
-        "-f", "--file", help="File containing target URLs (one per line)")
+    target_group.add_argument("-u", "--url", required=True, help="Target URL")
 
     # Module selection
     module_group = parser.add_argument_group("Module Selection")
@@ -54,49 +51,24 @@ def parse_arguments():
     module_group.add_argument("--xss", action="store_true", help="XSS testing")
     module_group.add_argument(
         "--crawl", action="store_true", help="Web crawling")
-    module_group.add_argument(
-        "--all", action="store_true", help="Run all modules")
 
     # Crawler options
     crawler_group = parser.add_argument_group("Crawler Options")
     crawler_group.add_argument(
         "--depth", type=int, default=2, help="Maximum crawl depth (default: 2)")
-    crawler_group.add_argument(
-        "--same-domain", action="store_true", help="Only crawl URLs within the same domain")
-    crawler_group.add_argument(
-        "--exclude", help="Exclude URLs matching these patterns (comma-separated)")
-    crawler_group.add_argument(
-        "--include-forms", action="store_true", help="Include forms in crawling results")
 
     # SQL Scanner options
     sql_group = parser.add_argument_group("SQL Injection Options")
-    sql_group.add_argument("--sql-types", default="error,boolean,time,union,auth",
-                           help="Types of SQL injection to test (default: error,boolean,time,union,auth)")
     sql_group.add_argument("--params",
                            help="Specify parameters to test for SQL injection (comma-separated)")
 
-    # XSS Scanner options
-    xss_group = parser.add_argument_group("XSS Options")
-    xss_group.add_argument("--xss-types", default="reflected",
-                           help="Types of XSS to test (default: reflected)")
-    xss_group.add_argument(
-        "--callback-url", help="Callback URL for blind XSS testing")
-
     # Request options
     request_group = parser.add_argument_group("Request Options")
-    request_group.add_argument("-m", "--method", default="GET", choices=["GET", "POST"],
-                               help="HTTP method (default: GET)")
-    request_group.add_argument(
-        "-d", "--data", help="POST data (e.g. 'param1=value1&param2=value2')")
     request_group.add_argument(
         "-H", "--headers", help="Custom HTTP headers (e.g. 'Header1:value1,Header2:value2')")
     request_group.add_argument(
         "-c", "--cookies", help="HTTP cookies (e.g. 'cookie1=value1;cookie2=value2')")
     request_group.add_argument("-A", "--user-agent", help="Custom User-Agent")
-    request_group.add_argument("-t", "--timeout", type=int,
-                               default=30, help="Request timeout in seconds (default: 30)")
-    request_group.add_argument("--delay", type=float, default=0,
-                               help="Delay between requests in seconds (default: 0)")
     request_group.add_argument("--no-verify-ssl", action="store_true",
                                help="Disable SSL certificate verification for HTTPS connections")
 
@@ -114,18 +86,11 @@ def parse_arguments():
 
 
 def load_targets(args):
-    """Load target URLs from command line arguments or file"""
+    """Load target URL from command line arguments"""
     urls = []
 
     if args.url:
         urls.append(args.url)
-    elif args.file:
-        try:
-            with open(args.file, 'r') as f:
-                urls = [line.strip() for line in f if line.strip()]
-        except Exception as e:
-            print(f"Error loading targets from file: {str(e)}")
-            sys.exit(1)
 
     return urls
 
@@ -158,60 +123,102 @@ def parse_cookies(cookies_str):
     return cookies
 
 
+def save_crawler_log(crawler_results, crawled_urls, log_file, target_url, output):
+    """Save crawler results to a log file
+
+    Args:
+        crawler_results (list): List of URLs with parameters
+        crawled_urls (set): Set of all crawled URLs
+        log_file (str): Path to log file
+        target_url (str): Target URL
+        output (Output): Output handler
+    """
+    try:
+        # Create directory if it doesn't exist
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        # Append to log file
+        mode = 'a' if os.path.exists(log_file) else 'w'
+        with open(log_file, mode) as f:
+            # If new file, write header
+            if mode == 'w':
+                f.write(
+                    "============================================================\n")
+                f.write(
+                    "||           Web Security Fuzzer - Vulnerability Log        ||\n")
+                f.write(
+                    "============================================================\n\n")
+                f.write(
+                    f"Scan started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Target URL: {target_url}\n\n")
+                f.write(
+                    "------------------------------------------------------------\n\n")
+
+            # Write crawler section header
+            f.write(f"\n{'='*60}\n")
+            f.write(
+                f"|| CRAWLER RESULTS ||\n")
+            f.write(f"{'='*60}\n")
+            f.write(
+                f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+            # Write results
+            f.write(f"Total URLs discovered: {len(crawled_urls)}\n")
+            f.write(f"URLs with parameters found: {len(crawler_results)}\n\n")
+
+            if crawler_results:
+                f.write("URLs with parameters:\n")
+                for i, url in enumerate(crawler_results, 1):
+                    f.write(f"{i}. {url}\n")
+                f.write("\n")
+
+            # Add summary
+            f.write(
+                f"\nSummary: Found {len(crawled_urls)} total URLs and {len(crawler_results)} URLs with parameters from {target_url}\n")
+            f.write(f"{'='*60}\n\n")
+
+        output.success(f"Crawler results logged to: {log_file}")
+        return True
+    except Exception as e:
+        output.error(f"Error saving crawler results to log file: {str(e)}")
+        return False
+
+
 def run_crawler(urls, args, output):
     """Run the web crawler module"""
     output.info("Starting web crawler...")
 
-    # Parse exclude patterns
-    exclude_patterns = []
-    if args.exclude:
-        exclude_patterns = [pattern.strip()
-                            for pattern in args.exclude.split(',')]
-
-    # Setup crawler
     crawler = WebCrawler(
-        url=urls[0],  # Use the first URL as the starting point
-        max_depth=args.depth,
-        same_domain_only=args.same_domain,
-        exclude_patterns=exclude_patterns,
-        include_forms=args.include_forms,
-        timeout=args.timeout,
-        delay=args.delay,
-        user_agent=args.user_agent,
-        cookies=parse_cookies(args.cookies),
-        headers=parse_headers(args.headers),
-        verbose=args.verbose,
-        no_color=args.no_color,
-        verify_ssl=not args.no_verify_ssl
+        start_url=urls[0]
     )
 
-    # Start crawling
     output.info(f"Crawling {urls[0]} with max depth {args.depth}...")
     start_time = time.time()
-    results = crawler.crawl()
+    urls_with_params = crawler.crawl(max_depth=args.depth)
     end_time = time.time()
 
-    # Get parameterized URLs
-    parameterized_urls = crawler.get_parameterized_urls()
-
-    # Print results
     output.success(
         f"Crawling completed in {end_time - start_time:.2f} seconds")
-    output.info(f"Found {len(results['urls'])} total URLs")
-    output.success(f"Found {len(parameterized_urls)} URLs with parameters")
-    output.info(f"Parameterized URLs saved to: {results['log_file']}")
+    output.info(f"Found {len(crawler.crawled_urls)} total URLs")
+    output.success(f"Found {len(urls_with_params)} URLs with parameters")
 
-    # Return list of parameterized URLs
-    return parameterized_urls
+    if urls_with_params:
+        output.info("URLs with parameters:")
+        for i, url in enumerate(urls_with_params, 1):
+            output.info(f"  {i}. {url}")
+
+    results = {
+        'urls': urls_with_params
+    }
+
+    return urls_with_params, crawler.crawled_urls
 
 
 def run_sql_scanner(urls, args, output):
     """Run the SQL injection scanner module"""
     output.info("Starting SQL Injection scanner...")
-
-    # Parse SQL injection types
-    sql_types = [t.strip() for t in args.sql_types.split(',')
-                 ] if args.sql_types else None
 
     # Parse target parameters if specified
     target_params = None
@@ -222,14 +229,11 @@ def run_sql_scanner(urls, args, output):
     # Setup SQL scanner
     sql_scanner = SQLScanner(
         urls=urls,
-        method=args.method,
-        data=args.data,
+        method="GET",
+        data=None,
         headers=parse_headers(args.headers),
         cookies=parse_cookies(args.cookies),
-        timeout=args.timeout,
-        delay=args.delay,
         user_agent=args.user_agent,
-        injection_types=sql_types,
         verbose=args.verbose,
         no_color=args.no_color,
         target_params=target_params,
@@ -256,22 +260,15 @@ def run_xss_scanner(urls, args, output):
     """Run the XSS scanner module"""
     output.info("Starting XSS scanner...")
 
-    # Parse XSS types
-    xss_types = [t.strip() for t in args.xss_types.split(',')
-                 ] if args.xss_types else None
-
     # Setup XSS scanner
     xss_scanner = XSSScanner(
         urls=urls,
-        method=args.method,
-        data=args.data,
+        method="GET",
+        data=None,
         headers=parse_headers(args.headers),
         cookies=parse_cookies(args.cookies),
-        timeout=args.timeout,
-        delay=args.delay,
         user_agent=args.user_agent,
-        injection_types=xss_types,
-        callback_url=args.callback_url,
+        injection_types=["reflected"],
         verbose=args.verbose,
         no_color=args.no_color,
         verify_ssl=not args.no_verify_ssl
@@ -425,10 +422,10 @@ def main():
     # Load target URLs
     urls = load_targets(args)
     if not urls:
-        output.error("No target URLs provided")
+        output.error("No target URL provided")
         sys.exit(1)
 
-    output.info(f"Loaded {len(urls)} target URL(s)")
+    output.info(f"Loaded {len(urls)} target URL")
 
     # Create vulnerability log filename based on first URL and timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -448,11 +445,12 @@ def main():
     discovered_urls = []
 
     # Run web crawler if selected
-    if args.crawl or args.all:
+    if args.crawl:
         results['modules'].append('crawler')
-        crawler_results = run_crawler(urls, args, output)
+        crawler_results, crawled_urls = run_crawler(urls, args, output)
         results['crawler'] = {
-            'urls_discovered': len(crawler_results),
+            'urls_discovered': len(crawled_urls),
+            'urls_with_params': len(crawler_results),
             'urls': crawler_results
         }
 
@@ -460,8 +458,12 @@ def main():
         discovered_urls.extend(
             [url for url in crawler_results if url not in urls])
 
+        # Save crawler results to log
+        save_crawler_log(crawler_results, crawled_urls,
+                         vuln_log_file, urls[0], output)
+
     # Run SQL injection scanner if selected
-    if args.sql or args.all:
+    if args.sql:
         results['modules'].append('sql')
         # Include discovered URLs if available
         scan_urls = urls + discovered_urls if discovered_urls else urls
@@ -479,7 +481,7 @@ def main():
             )
 
     # Run XSS scanner if selected
-    if args.xss or args.all:
+    if args.xss:
         results['modules'].append('xss')
         # Include discovered URLs if available
         scan_urls = urls + discovered_urls if discovered_urls else urls
@@ -502,12 +504,12 @@ def main():
 
     # Print summary
     output.success("Scan completed")
-    output.info(f"All vulnerabilities logged to: {vuln_log_file}")
+    output.info(f"All results logged to: {vuln_log_file}")
 
     # If no modules were selected
     if not results['modules']:
         output.warning(
-            "No modules were selected. Use --sql, --xss, --crawl, or --all")
+            "No modules were selected. Use --sql, --xss, --crawl")
 
 
 if __name__ == "__main__":

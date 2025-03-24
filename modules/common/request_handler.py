@@ -11,7 +11,7 @@ import urllib3
 
 
 class RequestHandler:
-    def __init__(self, timeout=100, user_agent=None, cookies=None, proxy=None, delay=0, headers=None, verify_ssl=False):
+    def __init__(self, timeout=100, user_agent=None, cookies=None, delay=0, headers=None, verify_ssl=False):
         self.timeout = timeout
         self.delay = delay
         self.user_agent = user_agent or "WebSecurityFuzzer/2.0"
@@ -22,7 +22,7 @@ class RequestHandler:
         else:
             self.cookies = self._parse_cookies(cookies) if cookies else {}
 
-        self.proxies = self._setup_proxy(proxy) if proxy else {}
+        # self.proxies = self._setup_proxy(proxy) if proxy else {}
         self.headers = headers or {}
         self.verify_ssl = verify_ssl
 
@@ -65,25 +65,25 @@ class RequestHandler:
             print(f"[!] Error parsing cookies: {e}")
             return {}
 
-    def _setup_proxy(self, proxy):
-        """
-        Setup proxy configuration
+    # def _setup_proxy(self, proxy):
+    #     """
+    #     Setup proxy configuration
 
-        Args:
-            proxy (str): Proxy string in format "http://host:port"
+    #     Args:
+    #         proxy (str): Proxy string in format "http://host:port"
 
-        Returns:
-            dict: Proxy configuration for requests
-        """
-        try:
-            proxies = {
-                'http': proxy,
-                'https': proxy
-            }
-            return proxies
-        except Exception as e:
-            print(f"[!] Error setting up proxy: {e}")
-            return {}
+    #     Returns:
+    #         dict: Proxy configuration for requests
+    #     """
+    #     try:
+    #         proxies = {
+    #             'http': proxy,
+    #             'https': proxy
+    #         }
+    #         return proxies
+    #     except Exception as e:
+    #         print(f"[!] Error setting up proxy: {e}")
+    #         return {}
 
     def send_request(self, url, method="GET", data=None, headers=None, allow_redirects=True):
         """

